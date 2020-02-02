@@ -12,27 +12,13 @@ function printData {
     print "Periapsis: " + periapsis + emptyLine at(0, 11).
     print "Orbital Velocity: " + ship:velocity:orbit:mag + emptyLine at(0,12).
     print "Bearing: " + ship:facing + emptyLine at (0, 13).
-    print "Position " + ship:position + emptyLine at (0, 14).
-    print "Airspeed " + ship:airspeed + emptyLine at (0, 15).
+    print "Airspeed " + ship:airspeed + emptyLine at (0, 14).
 }
 
 function printHeader {
     parameter header is "Setting Up.".
     local emptyLine is "                             ".
     print header + emptyLine at (0, 3).
-}
-
-// Angle of attack for early burn stages
-function getAscentAngle {
-    parameter minangle is 10.
-    local x is ship:velocity:orbit:mag.
-    // Mapping orbital speed onto angle of attack
-    local slope is -0.1 * x + 100.
-    if slope < minangle {
-        return minangle.
-    } else {
-        return slope.
-    }
 }
 
 // Print our data out continously. 
@@ -52,7 +38,7 @@ unlock throttle.
 wait 1.
 
 set current_thrust to 1.
-set desired_heading to up.
+set desired_heading to heading(90, 90, 270).
 lock throttle to current_thrust.
 lock steering to desired_heading.
 
@@ -71,32 +57,34 @@ when stage:liquidfuel < 1 then {
 
 // Vertical acceleration
 printHeader("Accelerating vertically.").
-wait until ship:verticalspeed >= 100.
+wait until ship:verticalspeed >= 100 or ship:bounds:bottomaltradar > 1000.
+set desired_heading to heading(90, 84, 270).
+wait until vang(heading(90, 84, 270):forevector, ship:srfprograde:forevector) < 0.5.
 
 // Early gravity turn.
+set prevapeta to eta:apoapsis.
 printHeader("Performing gravity turn.").
-until ship:altitude >= 35000 {
-    if eta:apoapsis < 30 or apoapsis < 40000 {
-        set desired_heading to heading(90, getAscentAngle(45), 90).
+until ship:apoapsis >= 72000 {
+    if ship:airspeed > 1000 or (ship:altitude > 10000 and eta:apoapsis >= 30) {
+        set desired_heading to ship:prograde:forevector.
     } else {
-        set desired_heading to heading(90, getAscentAngle(), 90).
-    } 
-}
-
-// Prograde burn.
-printHeader("Burning prograde.").
-until apoapsis >= 71000 {
-    if eta:apoapsis < 60 {
-        set desired_heading to heading(90, 45, 90).
-    } else {
-        set desired_heading to prograde.
+        set desired_heading to ship:srfprograde:forevector.
     }
+    wait 0.00001.
 }
 
 set current_thrust to 0.
+printHeader("Coasting to edge of atmosphere.").
+until ship:altitude >= 70000 {
+    set desired_heading to ship:srfprograde:forevector.
+    if ship:apoapsis < 71750 {
+        set current_thrust to 1.
+    } else {
+        set current_thrust to 0.
+    }
+    wait 0.00001.
+}
+set desired_heading to ship:prograde.
 
-// Circularizing - want to do this without nodes so i can have things launch without being the "player" vessel.
-printHeader("Calculating circularization burn").
-
-
-
+printHeader("Circularizing.").
+// todo
