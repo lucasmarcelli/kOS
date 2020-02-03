@@ -61,11 +61,10 @@ wait until ship:verticalspeed >= 100 or ship:bounds:bottomaltradar > 1000.
 set desired_heading to heading(90, 84, 270).
 wait until vang(heading(90, 84, 270):forevector, ship:srfprograde:forevector) < 0.5.
 
-// Early gravity turn.
-set prevapeta to eta:apoapsis.
+// Gravity turn.
 printHeader("Performing gravity turn.").
-until ship:apoapsis >= 72000 {
-    if ship:airspeed > 1000 or (ship:altitude > 10000 and eta:apoapsis >= 30) {
+until ship:apoapsis >= 85000 {
+    if ship:airspeed > 1100 or (ship:altitude > 10000 and eta:apoapsis >= 30) {
         set desired_heading to ship:prograde:forevector.
     } else {
         set desired_heading to ship:srfprograde:forevector.
@@ -74,17 +73,18 @@ until ship:apoapsis >= 72000 {
 }
 
 set current_thrust to 0.
+set warpmode to "physics".
+set warp to 2.
 printHeader("Coasting to edge of atmosphere.").
 until ship:altitude >= 70000 {
     set desired_heading to ship:srfprograde:forevector.
-    if ship:apoapsis < 71750 {
+    if ship:apoapsis < 84750 {
         set current_thrust to 1.
     } else {
         set current_thrust to 0.
     }
     wait 0.00001.
 }
+set warp to 0.
+set warpmode to "rails".
 set desired_heading to ship:prograde.
-
-printHeader("Circularizing.").
-// todo
